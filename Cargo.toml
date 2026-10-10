@@ -1,0 +1,21 @@
+[package]
+name = "gray-latchkey"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.91"
+license = "MIT"
+description = "Inject stored credentials into curl calls to configured hosts; redact them from results"
+
+[[bin]]
+name = "gray-latchkey"
+path = "src/main.rs"
+
+[lib]
+name = "gray_latchkey"
+path = "src/lib.rs"
+
+[dependencies]
+serde_json = "1"
+
+[profile.release]
+strip = true
