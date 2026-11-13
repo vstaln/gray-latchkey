@@ -41,6 +41,7 @@ fn manifest() -> Value {
         "tools": [],
         "description": "inject stored credentials into curl calls",
         "commands": ["/latchkey"],
+        "command_descriptions": {"/latchkey": "show hosts that get injected credentials"},
         "hooks": ["tool/before", "tool/after"],
     })
 }
