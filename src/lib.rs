@@ -70,7 +70,10 @@ fn rules() -> Vec<Rule> {
         return Vec::new();
     };
     let Ok(cfg) = serde_json::from_str::<Value>(&text) else {
-        eprintln!("gray-latchkey: {} isn't valid JSON", config_path().display());
+        eprintln!(
+            "gray-latchkey: {} isn't valid JSON",
+            config_path().display()
+        );
         return Vec::new();
     };
     let Some(hosts) = cfg.get("hosts").and_then(Value::as_object) else {
@@ -110,7 +113,10 @@ fn rules() -> Vec<Rule> {
 /// argument (`sudo curl`, `FOO=1 curl`, `env A=1 curl`, `time curl`).
 fn is_prefix_word(w: &str) -> bool {
     w.contains('=')
-        || matches!(w, "sudo" | "command" | "env" | "time" | "nohup" | "exec" | "builtin")
+        || matches!(
+            w,
+            "sudo" | "command" | "env" | "time" | "nohup" | "exec" | "builtin"
+        )
 }
 
 /// Is the token starting at `pos` in command position — the first
@@ -122,7 +128,10 @@ fn is_command_position(cmd: &str, pos: usize) -> bool {
     // `pos` may sit mid-word (`/usr/bin/curl`); back up to the word start.
     let mut ws = pos;
     while ws > 0
-        && !matches!(bytes[ws - 1], b' ' | b'\t' | b';' | b'|' | b'&' | b'(' | b'\n')
+        && !matches!(
+            bytes[ws - 1],
+            b' ' | b'\t' | b';' | b'|' | b'&' | b'(' | b'\n'
+        )
     {
         ws -= 1;
     }
@@ -130,9 +139,7 @@ fn is_command_position(cmd: &str, pos: usize) -> bool {
         .rfind([';', '|', '&', '\n', '('])
         .map(|i| i + 1)
         .unwrap_or(0);
-    cmd[seg_start..ws]
-        .split_whitespace()
-        .all(is_prefix_word)
+    cmd[seg_start..ws].split_whitespace().all(is_prefix_word)
 }
 
 /// Next `curl` token sitting in command position: word-boundaried (a `/`
@@ -148,7 +155,10 @@ fn find_curl(cmd: &str, from: usize) -> Option<usize> {
         // later tool call got "plugin policy unavailable".
         if bytes[i..i + 4] == *b"curl" {
             let before_ok = i == 0
-                || matches!(bytes[i - 1], b' ' | b'\t' | b';' | b'|' | b'&' | b'(' | b'/' | b'\n');
+                || matches!(
+                    bytes[i - 1],
+                    b' ' | b'\t' | b';' | b'|' | b'&' | b'(' | b'/' | b'\n'
+                );
             let after_ok = i + 4 == bytes.len()
                 || matches!(bytes[i + 4], b' ' | b'\t' | b'\n' | b';' | b'|' | b'&');
             if before_ok && after_ok && is_command_position(cmd, i) {
@@ -431,7 +441,10 @@ mod tests {
         with_config(CFG, |_| {
             assert_eq!(before("curl -s https://other.io")["decision"], "allow");
             // `curl` as an echo argument is not an invocation — no inject.
-            assert_eq!(before("echo curl api.example.com | wc")["decision"], "allow");
+            assert_eq!(
+                before("echo curl api.example.com | wc")["decision"],
+                "allow"
+            );
             let r = call(
                 "tool/before",
                 json!({"name": "read", "args": {"command": "curl api.example.com"}}),
@@ -464,7 +477,10 @@ mod tests {
             r#"{"hosts": {"h.io": {"header": "X-T", "key_env": "LATCHKEY_TEST_K"}}}"#,
             |_| {
                 unsafe { std::env::set_var("LATCHKEY_TEST_K", "envval-99") };
-                let cmd = before("curl h.io/x")["args"]["command"].as_str().unwrap().to_string();
+                let cmd = before("curl h.io/x")["args"]["command"]
+                    .as_str()
+                    .unwrap()
+                    .to_string();
                 assert!(cmd.contains("-H 'X-T: envval-99'"), "{cmd}");
                 unsafe { std::env::remove_var("LATCHKEY_TEST_K") };
                 assert_eq!(before("curl h.io/x")["decision"], "allow");
@@ -475,7 +491,8 @@ mod tests {
     #[test]
     fn after_scrubs_secret_from_echo() {
         with_config(CFG, |_| {
-            let content = "$ curl -H 'Authorization: Bearer sk-test-1234567890' api.example.com\nok";
+            let content =
+                "$ curl -H 'Authorization: Bearer sk-test-1234567890' api.example.com\nok";
             let r = call(
                 "tool/after",
                 json!({"name": "bash", "content": content, "session": {"id": "s"}}),
